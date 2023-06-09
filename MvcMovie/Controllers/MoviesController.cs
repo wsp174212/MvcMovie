@@ -20,15 +20,55 @@ namespace MvcMovie.Controllers
         }
 
         // GET: Movies
-        public async Task<IActionResult> Index()
+        /*   public async Task<IActionResult> Index()
+           {
+                 return _context.Movie != null ? 
+                             View(await _context.Movie.ToListAsync()) :
+                             Problem("Entity set 'MvcMovieContext.Movie'  is null.");
+           }*/
+
+        // GET: Movies
+        public async Task<IActionResult> Index(string movieGenre, string searchString)
         {
-              return _context.Movie != null ? 
-                          View(await _context.Movie.ToListAsync()) :
-                          Problem("Entity set 'MvcMovieContext.Movie'  is null.");
+            if (_context.Movie == null)
+            {
+                return Problem("Entity set 'MvcMovieContext.Movie'  is null.");
+            }
+
+            // Use LINQ to get list of genres.
+            IQueryable<string> genreQuery = from m in _context.Movie
+                                            orderby m.Genre
+                                            select m.Genre;
+            var movies = from m in _context.Movie
+                         select m;
+
+            if (!string.IsNullOrEmpty(searchString))
+            {
+                movies = movies.Where(s => s.Title!.Contains(searchString));
+            }
+
+            if (!string.IsNullOrEmpty(movieGenre))
+            {
+                movies = movies.Where(x => x.Genre == movieGenre);
+            }
+
+            var movieGenreVM = new MovieGenreViewModel
+            {
+                Genres = new SelectList(await genreQuery.Distinct().ToListAsync()),
+                Movies = await movies.ToListAsync()
+            };
+
+            return View(movieGenreVM);
+        }
+        [HttpPost]
+        public string Index(string SearchString, bool notUsed)
+        {
+            return "From [HttpPost]Index: filter on " + SearchString;
         }
 
-        // GET: Movies/Details/5
-        public async Task<IActionResult> Details(int? id)
+
+            // GET: Movies/Details/5
+            public async Task<IActionResult> Details(int? id)
         {
             if (id == null || _context.Movie == null)
             {
